@@ -7,7 +7,7 @@ import { lastValueFrom } from 'rxjs';
 @Injectable()
 export class AppService {
   constructor(private http: HttpService, private config: ConfigService) {
-    this.authStrapiProd();
+    this.authAmoLocal();
   }
 
   private async doRequest<T = unknown>(
@@ -27,53 +27,75 @@ export class AppService {
   }
 
   private async authStrapiProd(): Promise<any> {
-    const data = await this.doRequest({
-      method: 'POST',
-      url: `${this.config.get('AUTH_STRAPI_URL_PRODUCTION')}`,
-      data: {
-        identifier: `${this.config.get('STRAPI_LOGIN')}`,
-        password: `${this.config.get('STRAPI_PASSWORD')}`,
-      },
-    });
-    return data.data;
+    try {
+      const data = await this.doRequest({
+        method: 'POST',
+        url: `${this.config.get('AUTH_STRAPI_URL_PRODUCTION')}`,
+        data: {
+          identifier: `${this.config.get('STRAPI_LOGIN')}`,
+          password: `${this.config.get('STRAPI_PASSWORD')}`,
+        },
+      });
+      if (data.data) {
+        return data.data;
+      }
+    } catch (error) {
+      throw new Error(error);
+    }
   }
 
   private async authAmoProd(): Promise<any> {
-    const jwtBearerToken = await this.authStrapiProd();
-    const data = await this.doRequest({
-      headers: {
-        Authorization: `Bearer ${jwtBearerToken.jwt}`,
-      },
-      method: 'GET',
-      url: `${this.config.get('AMO_STRAPI_URL_PRODUCTION')}`,
-    });
-    return data.data;
+    try {
+      const jwtBearerToken = await this.authStrapiProd();
+      const data = await this.doRequest({
+        headers: {
+          Authorization: `Bearer ${jwtBearerToken.jwt}`,
+        },
+        method: 'GET',
+        url: `${this.config.get('AMO_STRAPI_URL_PRODUCTION')}`,
+      });
+      if (data.data) {
+        return data.data;
+      }
+    } catch (error) {
+      throw new Error(error);
+    }
   }
 
   private async authStrapiLocal(): Promise<any> {
-    const data = await this.doRequest({
-      method: 'POST',
-      url: `${this.config.get('AUTH_STRAPI_URL_LOCAL')}`,
-      data: {
-        identifier: `${this.config.get('STRAPI_LOGIN')}`,
-        password: `${this.config.get('STRAPI_PASSWORD')}`,
-      },
-    });
-    return data.data;
+    try {
+      const data = await this.doRequest({
+        method: 'POST',
+        url: `${this.config.get('AUTH_STRAPI_URL_LOCAL')}`,
+        data: {
+          identifier: `${this.config.get('STRAPI_LOGIN')}`,
+          password: `${this.config.get('STRAPI_PASSWORD')}`,
+        },
+      });
+      if (data.data) {
+        return data.data;
+      }
+    } catch (error) {
+      throw new Error(error);
+    }
   }
 
   private async authAmoLocal(): Promise<void> {
-    const tokenLocal = await this.authStrapiLocal();
-    const authData = await this.authAmoProd();
-    const data = await this.doRequest({
-      headers: {
-        Authorization: `Bearer ${tokenLocal.jwt}`,
-      },
-      method: 'PUT',
-      url: `${this.config.get('AMO_STRAPI_URL_LOCAL')}`,
-      data: {
-        authData,
-      },
-    });
+    try {
+      const tokenLocal = await this.authStrapiLocal();
+      const authData = await this.authAmoProd();
+      await this.doRequest({
+        headers: {
+          Authorization: `Bearer ${tokenLocal.jwt}`,
+        },
+        method: 'PUT',
+        url: `${this.config.get('AMO_STRAPI_URL_LOCAL')}`,
+        data: {
+          authData,
+        },
+      });
+    } catch (error) {
+      throw new Error(error);
+    }
   }
 }
